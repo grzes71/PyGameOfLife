@@ -1,12 +1,5 @@
 import pygame
 from pygame.locals import *
-from copy import deepcopy
-
-# d = {0: [], 1: [0, 1, 2], 2: [], 3: [4, 5, 6]}
-# max(d)
-# min(d)
-# max((max(d[x]) for x in d if d[x]))
-# min((min(d[x]) for x in d if d[x]))
 
 CLOCK_TICK = 50
 TIME_WAIT = 500
@@ -14,30 +7,35 @@ SIZE = (40, 30)
 
 BOARD = {
     1: {1, 2, 3},
-    5: {3, 4, 5},
-    6: {4, 5, 6},
+    4: {10},
+    5: {3, 4, 5, 8, 10},
+    6: {4, 5, 6, 9, 10},
+    20: {3, 8},
+    21: {1, 2, 4, 5, 6, 7, 9, 10},
+    22: {3, 8},
 }
 
 
 class GameBoard:
+    """GameBoard class implements game logic.
+    """
     SURROUNDING = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
+    TOTAL = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 0), (0, 1), (1, -1), (1, 0), (1, 1))
 
-    def __init__(self, board):
-        self.board = board
+    def __init__(self, board=None):
+        self.board = board or {}
 
     def get_all_cells(self):
         all_cells = set()
         for row_idx in self.board:
             for col_idx in self.board[row_idx]:
                 all_cells.add((row_idx, col_idx))
-                for y, x in GameBoard.SURROUNDING:
+                for y, x in GameBoard.TOTAL:
                     all_cells.add((row_idx+y, col_idx+x))
         return all_cells
 
     def is_onboard(self, curr_y, curr_x):
-        if curr_y in self.board:
-            if curr_y in self.board:
-                return curr_x in self.board[curr_y]
+        return None if curr_y not in self.board else curr_x in self.board[curr_y]
 
     def get_no_neighbours(self, all_cells, row_idx, col_idx):
         no_neighbours = 0
@@ -73,11 +71,12 @@ class GameBoard:
 
 
 class Game(object):
+    """Game class responsible for drawing the game board.
+    """
     PATT_COLOR = (255, 100, 0)
     BACK_COLOR = (0, 0, 0)
 
     def __init__(self):
-        pygame.init()
         vi = pygame.display.Info()
         width, height = vi.current_w, vi.current_h
         self.video_size = (width, height)
@@ -117,25 +116,24 @@ class Game(object):
         pygame.time.wait(TIME_WAIT)
 
     def loop(self):
-
+        """"Main game loop.
+        """
         pygame.event.pump()
         in_progress = True
 
-        while in_progress:  # main game loop
+        while in_progress:
             self.logic()
             self.draw()
             self.update()
             in_progress = self.in_progress()
 
-        pygame.display.quit()
-        pygame.quit()
-
 
 def main():
-    game = Game()
-    game.loop()
-
+    pygame.init()
+    Game().loop()
+    pygame.display.quit()
+    pygame.quit()
 
 if __name__ == '__main__':
     main()
-    pygame.display.quit()
+
