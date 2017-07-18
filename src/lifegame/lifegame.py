@@ -3,34 +3,73 @@ from pygame.locals import *
 from copy import deepcopy
 
 # d = {0: [], 1: [0, 1, 2], 2: [], 3: [4, 5, 6]}
+# max(d)
+# min(d)
 # max((max(d[x]) for x in d if d[x]))
 # min((min(d[x]) for x in d if d[x]))
 
-
+CLOCK_TICK = 50
+TIME_WAIT = 500
 SIZE = (40, 30)
-BOARD = """
-0
-1110000
-0000000
-0000000
-0000000
-0000000
-000000000000000000000000000
-000000000000000000000000000
-000000000000000000000000000
-000000000000000000000000000
-000000000000000000000000010
-000000000000000000011000000
-000000000000000000001000111
-000000000000000000000000000
-000000000000000000000000000
-000000000000000000000000000
-000000111000000000000000000
-000000011100000000000000000
-010000000000000000000000000
-001000000000000000000000000
-111000000000000000000000000
-"""
+
+BOARD = {
+    1: {1, 2, 3},
+    5: {3, 4, 5},
+    6: {4, 5, 6},
+}
+
+
+class GameBoard:
+    SURROUNDING = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
+
+    def __init__(self, board):
+        self.board = board
+
+    def get_all_cells(self):
+        all_cells = set()
+        for row_idx in self.board:
+            for col_idx in self.board[row_idx]:
+                all_cells.add((row_idx, col_idx))
+                for y, x in GameBoard.SURROUNDING:
+                    all_cells.add((row_idx+y, col_idx+x))
+        return all_cells
+
+    def is_onboard(self, curr_y, curr_x):
+        if curr_y in self.board:
+            if curr_y in self.board:
+                return curr_x in self.board[curr_y]
+
+    def get_no_neighbours(self, all_cells, row_idx, col_idx):
+        no_neighbours = 0
+        for y, x in GameBoard.SURROUNDING:
+            curr_y, curr_x = row_idx + y, col_idx + x
+            if (curr_y, curr_x) in all_cells:
+                if self.is_onboard(curr_y, curr_x):
+                    no_neighbours += 1
+
+        return no_neighbours
+
+    def process(self):
+        def add_to_board():
+            if row_idx not in board2:
+                board2[row_idx] = set()
+            board2[row_idx].add(col_idx)
+
+        all_cells = self.get_all_cells()
+        board2 = {}
+        for cell in all_cells:
+            row_idx, col_idx = cell
+            no_neighbours = self.get_no_neighbours(all_cells, row_idx, col_idx)
+            is_onboard = self.is_onboard(row_idx, col_idx)
+            if __debug__:
+                print("Cell: %d,%d neighbours: %s exists: %s" % (row_idx, col_idx, no_neighbours, is_onboard))
+            if is_onboard:  # life cell
+                if 2 <= no_neighbours <= 3:
+                    add_to_board()
+            else:  # not life cell
+                if no_neighbours == 3:
+                    add_to_board()
+        self.board = board2
 
 
 class Game(object):
@@ -47,75 +86,48 @@ class Game(object):
         self.patterns_horizontal, self.patterns_vertical = SIZE
         self.pattern_width = width / self.patterns_horizontal
         self.pattern_height = height / self.patterns_vertical
-        self.init_board()
+        self.game_board = GameBoard(BOARD)
 
-    def get_no_neighbours(self, x, y):
-        no_neighbours = 0
-        if y > 0 and x > 0:
-            no_neighbours += self.board[y - 1][x - 1]
-        if y > 0:
-            no_neighbours += self.board[y - 1][x]
-        if y > 0 and x < (self.patterns_horizontal - 1):
-            no_neighbours += self.board[y - 1][x + 1]
-        if x > 0:
-            no_neighbours += self.board[y][x - 1]
-        if x < (self.patterns_horizontal - 1):
-            no_neighbours += self.board[y][x + 1]
-        if x > 0 and y < (self.patterns_vertical - 1):
-            no_neighbours += self.board[y + 1][x - 1]
-        if y < (self.patterns_vertical - 1):
-            no_neighbours += self.board[y + 1][x]
-        if x < (self.patterns_horizontal - 1) and y < (self.patterns_vertical - 1):
-            no_neighbours += self.board[y + 1][x + 1]
-        return no_neighbours
-
-    def init_board(self):
-        self.board = [[0 for x in range(0, self.patterns_horizontal)] for y in range(0, self.patterns_vertical)]
-        self.board2 = deepcopy(self.board)
-        for y, row in enumerate(BOARD.split()):
-            for x, cell in enumerate(row):
-                if cell == '1' and x <= self.patterns_horizontal and y <= self.patterns_vertical:
-                    self.board[y][x] = 1
+    def get_cell(self, y, x):
+        return self.game_board.is_onboard(y, x)
 
     def draw(self):
         pw, ph = self.pattern_width, self.pattern_height
         screen = self.screen
         for x in range(0, self.patterns_horizontal):
             for y in range(0, self.patterns_vertical):
-                color = Game.PATT_COLOR if self.board[y][x] == 1 else Game.BACK_COLOR
+                color = Game.PATT_COLOR if self.get_cell(y, x) else Game.BACK_COLOR
                 pygame.draw.rect(screen, color, pygame.Rect(x * pw, y * ph, pw - 1, ph - 1))
 
     def logic(self):
-        for x in range(0, self.patterns_horizontal):
-            for y in range(0, self.patterns_vertical):
-                no_neighbours = self.get_no_neighbours(x, y)
-                self.board2[y][x] = self.board[y][x]
-                if not self.board[y][x] and no_neighbours == 3:
-                    self.board2[y][x] = 1
-                    print("Birth at %d,%d [%d]" % (x, y, no_neighbours))
-                if self.board[y][x] and no_neighbours != 3 and no_neighbours != 2:
-                    self.board2[y][x] = 0
-                    print("Delete at %d,%d [%d]" % (x, y, no_neighbours))
-        self.board = deepcopy(self.board2)
+        self.game_board.process()
+
+    def in_progress(self):
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return False
+            elif event.type == pygame.QUIT:
+                return False
+        return True
+
+    def update(self):
+        pygame.display.update()
+        self.clock.tick(CLOCK_TICK)
+        pygame.time.wait(TIME_WAIT)
 
     def loop(self):
 
-        done = False
         pygame.event.pump()
-        self.screen.fill((0, 0, 0))
+        in_progress = True
 
-        while not done:  # main game loop
-            for event in pygame.event.get():
-                if event.type == QUIT:
-                    done = True
-
-            self.draw()
+        while in_progress:  # main game loop
             self.logic()
-            print("*** NEXT ***")
+            self.draw()
+            self.update()
+            in_progress = self.in_progress()
 
-            pygame.display.update()
-            self.clock.tick(50)
-            pygame.time.wait(100)
+        pygame.display.quit()
         pygame.quit()
 
 
