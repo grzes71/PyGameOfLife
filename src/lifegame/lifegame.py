@@ -3,24 +3,24 @@ from pygame.locals import *
 
 CLOCK_TICK = 50
 TIME_WAIT = 500
-SIZE = (40, 30)
+SIZE = (30, 25)
 
 BOARD = {
     1: {1, 2, 3},
     4: {10},
     5: {3, 4, 5, 8, 10},
     6: {4, 5, 6, 9, 10},
-    20: {3, 8},
-    21: {1, 2, 4, 5, 6, 7, 9, 10},
-    22: {3, 8},
+    18: {6, 11},
+    19: {4, 5, 7, 8, 9, 10, 12, 13},
+    20: {6, 11},
 }
 
 
 class GameBoard:
     """GameBoard class implements game logic.
     """
-    SURROUNDING = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
-    TOTAL = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 0), (0, 1), (1, -1), (1, 0), (1, 1))
+    SURROUNDING = [(x, y) for x in range(-1, 2) for y in range(-1, 2) if x or y]
+    TOTAL = [(x, y) for x in range(-1, 2) for y in range(-1, 2)]
 
     def __init__(self, board=None):
         self.board = board or {}
