@@ -4,8 +4,8 @@
 class GameBoard:
     """GameBoard class implements game logic.
     """
-    SURROUNDING = [(x, y) for x in range(-1, 2) for y in range(-1, 2) if x or y]
-    TOTAL = [(x, y) for x in range(-1, 2) for y in range(-1, 2)]
+    SURROUNDING = set((x, y) for x in range(-1, 2) for y in range(-1, 2) if x or y)
+    TOTAL = set((x, y) for x in range(-1, 2) for y in range(-1, 2))
 
     def __init__(self, board=None):
         self.board = board or {}
