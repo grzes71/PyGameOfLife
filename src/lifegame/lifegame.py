@@ -1,9 +1,8 @@
 import pygame
-from pygame.locals import *
 
 CLOCK_TICK = 50
 TIME_WAIT = 500
-SIZE = (30, 25)
+SIZE = (20, 25)
 
 BOARD = {
     1: {1, 2, 3},
@@ -59,7 +58,7 @@ class GameBoard:
             row_idx, col_idx = cell
             no_neighbours = self.get_no_neighbours(all_cells, row_idx, col_idx)
             is_onboard = self.is_onboard(row_idx, col_idx)
-            if __debug__:
+            if False:
                 print("Cell: %d,%d neighbours: %s exists: %s" % (row_idx, col_idx, no_neighbours, is_onboard))
             if is_onboard:  # life cell
                 if 2 <= no_neighbours <= 3:
@@ -76,16 +75,14 @@ class Game(object):
     PATT_COLOR = (255, 100, 0)
     BACK_COLOR = (0, 0, 0)
 
-    def __init__(self):
-        vi = pygame.display.Info()
-        width, height = vi.current_w, vi.current_h
+    def __init__(self, game_board, width, height):
         self.video_size = (width, height)
-        self.screen = pygame.display.set_mode(self.video_size, FULLSCREEN)
+        self.screen = pygame.display.set_mode(self.video_size, pygame.FULLSCREEN)
         self.clock = pygame.time.Clock()
         self.patterns_horizontal, self.patterns_vertical = SIZE
         self.pattern_width = width / self.patterns_horizontal
         self.pattern_height = height / self.patterns_vertical
-        self.game_board = GameBoard(BOARD)
+        self.game_board = game_board
 
     def get_cell(self, y, x):
         return self.game_board.is_onboard(y, x)
@@ -95,8 +92,11 @@ class Game(object):
         screen = self.screen
         for x in range(0, self.patterns_horizontal):
             for y in range(0, self.patterns_vertical):
-                color = Game.PATT_COLOR if self.get_cell(y, x) else Game.BACK_COLOR
+                is_cell = self.get_cell(y, x)
+                color = Game.PATT_COLOR if is_cell else Game.BACK_COLOR
                 pygame.draw.rect(screen, color, pygame.Rect(x * pw, y * ph, pw - 1, ph - 1))
+                if is_cell:
+                    print(x * pw, y * ph, pw - 1, ph - 1, color)
 
     def logic(self):
         self.game_board.process()
@@ -130,7 +130,9 @@ class Game(object):
 
 def main():
     pygame.init()
-    Game().loop()
+    game_board = GameBoard(BOARD)
+    game = Game(game_board, 1366, 768)
+    game.loop()
     pygame.display.quit()
     pygame.quit()
 
