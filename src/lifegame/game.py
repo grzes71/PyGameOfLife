@@ -7,13 +7,15 @@ import pygame
 from lifegame.board import GameBoard
 
 BOARD = {
-    1: {1, 2, 3},
-    4: {10},
-    5: {3, 4, 5, 8, 10},
-    6: {4, 5, 6, 9, 10},
-    18: {6, 11},
-    19: {4, 5, 7, 8, 9, 10, 12, 13},
+    0: {4, 5},
+    1: {3, 4},
+    2: {4},
+    6: {10},
+    7: {8, 10},
+    8: {9, 10},
     20: {6, 11},
+    21: {4, 5, 7, 8, 9, 10, 12, 13},
+    22: {6, 11},
 }
 
 def parse_args():
@@ -33,13 +35,9 @@ class Game(object):
     PATT_COLOR = (255, 100, 0)
     BACK_COLOR = (0, 0, 0)
 
-    def __init__(self, options, game_board):
+    def __init__(self, options, screen, game_board):
         self.options = options
-        self.video_size = (options.width, options.height)
-        if options.fullscreen:
-            self.screen = pygame.display.set_mode(self.video_size, pygame.FULLSCREEN)
-        else:
-            self.screen = pygame.display.set_mode(self.video_size)
+        self.screen = screen
         self.clock = pygame.time.Clock()
         self.pattern_width = options.width / self.patterns_horizontal
         self.pattern_height = options.height / self.patterns_vertical
@@ -53,19 +51,14 @@ class Game(object):
     def patterns_vertical(self):
         return self.options.vertical
 
-    def get_cell(self, y, x):
-        return self.game_board.is_onboard(y, x)
-
     def draw(self):
         pw, ph = self.pattern_width, self.pattern_height
         screen = self.screen
         for x in range(0, self.patterns_horizontal):
             for y in range(0, self.patterns_vertical):
-                is_cell = self.get_cell(y, x)
-                color = Game.PATT_COLOR if is_cell else Game.BACK_COLOR
+                is_onboard = self.game_board.is_onboard(y, x)
+                color = Game.PATT_COLOR if is_onboard else Game.BACK_COLOR
                 pygame.draw.rect(screen, color, pygame.Rect(x * pw, y * ph, pw - 1, ph - 1))
-                if is_cell:
-                    print(x * pw, y * ph, pw - 1, ph - 1, color)
 
     def logic(self):
         self.game_board.process()
@@ -99,9 +92,14 @@ class Game(object):
 
 def main():
     options = parse_args()
+    video_size = (options.width, options.height)
+    if options.fullscreen:
+        screen = pygame.display.set_mode(video_size, pygame.FULLSCREEN)
+    else:
+        screen = pygame.display.set_mode(video_size)
     pygame.init()
     game_board = GameBoard(BOARD)
-    game = Game(options, game_board)
+    game = Game(options, screen, game_board)
     game.loop()
     pygame.display.quit()
     pygame.quit()
