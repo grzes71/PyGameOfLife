@@ -29,6 +29,7 @@ def parse_args():
     parser.add_argument('--vertical', default=25, type=int, help='number of vertical cells')
     return parser.parse_args()
 
+
 class Game(object):
     """Game class responsible for drawing the game board.
     """
@@ -36,29 +37,66 @@ class Game(object):
     BACK_COLOR = (0, 0, 0)
 
     def __init__(self, options, screen, game_board):
-        self.options = options
         self.screen = screen
-        self.clock = pygame.time.Clock()
-        self.pattern_width = options.width / self.patterns_horizontal
-        self.pattern_height = options.height / self.patterns_vertical
         self.game_board = game_board
+        self.offset_x = self.offset_y = 0
+
+        self._width, self._height = options.width, options.height
+        self._horizontal, self._vertical = options.horizontal, options.vertical
+
+        self.clock_tick = options.clock
+        self.wait_time = options.wait
+
+        self.clock = pygame.time.Clock()
+        self._calculate_pattern_size()
+
+    def _calculate_pattern_size(self):
+        self._pattern_width = self.width / self.patterns_horizontal
+        self._pattern_height = self.height / self.patterns_vertical
+
+    @property
+    def pattern_width(self):
+        return self._pattern_width
+
+    @property
+    def pattern_height(self):
+        return self._pattern_height
 
     @property
     def patterns_horizontal(self):
-        return self.options.horizontal
+        return self._horizontal
 
     @property
     def patterns_vertical(self):
-        return self.options.vertical
+        return self._vertical
+
+    @patterns_horizontal.setter
+    def patterns_horizontal(self, value):
+        self._horizontal = value
+        self._calculate_pattern_size()
+
+    @patterns_vertical.setter
+    def patterns_vertical(self, value):
+        self._vertical = value
+        self._calculate_pattern_size()
+
+    @property
+    def width(self):
+        return self._width
+
+    @property
+    def height(self):
+        return self._height
 
     def draw(self):
         pw, ph = self.pattern_width, self.pattern_height
         screen = self.screen
+        screen.fill(Game.BACK_COLOR)
         for x in range(0, self.patterns_horizontal):
             for y in range(0, self.patterns_vertical):
-                is_onboard = self.game_board.is_onboard(y, x)
-                color = Game.PATT_COLOR if is_onboard else Game.BACK_COLOR
-                pygame.draw.rect(screen, color, pygame.Rect(x * pw, y * ph, pw - 1, ph - 1))
+                is_onboard = self.game_board.is_onboard(y+self.offset_y, x+self.offset_x)
+                if is_onboard:
+                    pygame.draw.rect(screen, Game.PATT_COLOR, pygame.Rect(x * pw, y * ph, pw - 1, ph - 1))
 
     def logic(self):
         self.game_board.process()
@@ -68,19 +106,38 @@ class Game(object):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return False
+                elif event.key == pygame.K_LEFT:
+                    self.offset_x -= 1
+                    print("x=", self.offset_x)
+                elif event.key == pygame.K_RIGHT:
+                    self.offset_x += 1
+                    print("x=", self.offset_x)
+                elif event.key == pygame.K_UP:
+                    self.offset_y -= 1
+                    print("y=", self.offset_y)
+                elif event.key == pygame.K_DOWN:
+                    self.offset_y += 1
+                    print("y=", self.offset_y)
+                elif event.key == pygame.K_KP_PLUS:
+                    self.patterns_vertical += 1
+                    self.patterns_horizontal += 1
+                    print("plus")
+                elif event.key == pygame.K_KP_MINUS:
+                    self.patterns_vertical -= 1
+                    self.patterns_horizontal -= 1
+                    print("minus")
             elif event.type == pygame.QUIT:
                 return False
         return True
 
     def update(self):
         pygame.display.update()
-        self.clock.tick(self.options.clock)
-        pygame.time.wait(self.options.wait)
+        self.clock.tick(self.clock_tick)
+        pygame.time.wait(self.wait_time)
 
     def loop(self):
         """"Main game loop.
         """
-        pygame.event.pump()
         in_progress = True
 
         while in_progress:

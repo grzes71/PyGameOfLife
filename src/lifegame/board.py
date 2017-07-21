@@ -1,6 +1,7 @@
 """GameBoard module.
 """
 
+
 class GameBoard:
     """GameBoard class implements game logic.
     """
